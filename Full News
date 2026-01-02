@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Full News</title>
+    <meta name="theme-color" content="#006a4e">
+    <style>
+        /* CSS VARIABLES & RESET */
+        :root {
+            --primary: #006a4e; --primary-dark: #004d38;
+            --text-main: #1a1a1a; --text-sec: #555;
+            --bg: #f4f6f8; --card-bg: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.05); --radius: 16px;
+            --font: "Hind Siliguri", "SolaimanLipi", sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight: transparent; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text-main); padding-bottom: 80px; }
+        
+        /* HEADER */
+        .app-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; z-index: 1000; box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+        }
+        .brand { font-size: 1.5rem; font-weight: 900; color: var(--primary); }
+        .brand span { color: #f42a41; }
+
+        /* CATEGORIES */
+        .cat-nav {
+            position: sticky; top: 60px; background: var(--bg);
+            padding: 12px 0; overflow-x: auto; white-space: nowrap;
+            z-index: 900; -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .cat-nav::-webkit-scrollbar { display: none; }
+        .cat-list { display: inline-flex; padding: 0 16px; gap: 8px; }
+        .cat-btn {
+            padding: 8px 16px; border-radius: 20px; background: #fff;
+            color: var(--text-sec); font-weight: 700; font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.3s;
+        }
+        .cat-btn.active { background: var(--primary); color: #fff; transform: scale(1.05); }
+
+        /* MAIN CONTENT */
+        main { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+        .view { display: none; animation: fadeUp 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* NEWS CARD */
+        .card {
+            background: var(--card-bg); border-radius: var(--radius);
+            overflow: hidden; margin-bottom: 20px; box-shadow: var(--shadow);
+            cursor: pointer; border: 1px solid rgba(0,0,0,0.02);
+        }
+        .card-img-box { position: relative; padding-top: 56%; background: #eee; }
+        .card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 18px; }
+        .card-meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; color: var(--primary); font-weight: 800; }
+        .card-title { font-size: 1.2rem; font-weight: 800; line-height: 1.4; margin-bottom: 10px; }
+        .card-desc { font-size: 0.95rem; color: var(--text-sec); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* DETAIL VIEW */
+        #detail-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; overflow-y: auto;
+            display: none; padding-bottom: 20px;
+        }
+        #detail-overlay.active { display: block; animation: fadeIn 0.3s; }
+        .detail-hero { height: 50vh; width: 100%; object-fit: cover; }
+        .detail-content { padding: 25px; background: var(--bg); margin-top: -30px; border-radius: 30px 30px 0 0; position: relative; }
+        .detail-tag { background: var(--primary); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .detail-title { font-size: 1.8rem; font-weight: 900; margin: 15px 0; line-height: 1.3; }
+        .detail-body { font-size: 1.1rem; line-height: 1.8; color: var(--text-main); white-space: pre-wrap; }
+        .close-btn { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; border: none; cursor: pointer; }
+
+        /* SEARCH & ABOUT */
+        .search-box { width: 100%; padding: 15px; border-radius: var(--radius); border: none; box-shadow: var(--shadow); margin-bottom: 20px; font-family: var(--font); outline: none; }
+        .about-box { background: #fff; padding: 30px; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: #fff; display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #eee; z-index: 1000;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; font-size: 0.7rem; gap: 4px; cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 24px; height: 24px; stroke-width: 2; }
+
+        /* TOAST */
+        .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 0.9rem; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 3000; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="brand">Full <span>News</span></div>
+        <button onclick="loadCurrentCategory()" style="background:none; border:none; cursor:pointer; color:var(--primary);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+    </header>
+
+    <nav class="cat-nav">
+        <div class="cat-list" id="cat-list">
+            <!-- Populated by JS -->
+        </div>
+    </nav>
+
+    <main>
+        <!-- HOME VIEW -->
+        <section id="view-home" class="view active">
+            <div id="news-container"></div>
+        </section>
+
+        <!-- SEARCH VIEW -->
+        <section id="view-search" class="view">
+            <input type="text" class="search-box" placeholder="খবর অনুসন্ধান করুন..." id="search-input">
+            <div id="search-container"></div>
+        </section>
+
+        <!-- ABOUT VIEW -->
+        <section id="view-about" class="view">
+            <div class="about-box">
+                <h2 style="color:var(--primary); margin-bottom:10px;">ফেল নিউজ সম্পর্কে</h2>
+                <p style="color:var(--text-sec); line-height:1.6;">
+                    সত্য ও নিরপেক্ষ সংবাদ পরিবেশন আমাদের মূল লক্ষ্য। ফেল নিউজ আপনাদের জন্য সবচেয়ে দ্রুততম খবর নিয়ে আসে। আমাদের সাথেই থাকুন।
+                </p>
+                <div style="margin-top:20px; font-size:0.8rem; color:#999;">Version 6.0 (User View)</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- DETAIL OVERLAY -->
+    <div id="detail-overlay">
+        <button class="close-btn" onclick="closeDetail()">✕</button>
+        <img id="dt-img" class="detail-hero" src="" alt="">
+        <div class="detail-content">
+            <span id="dt-cat" class="detail-tag">Category</span>
+            <h1 id="dt-title" class="detail-title">Title</h1>
+            <div style="margin-bottom:20px; color:#777; font-size:0.9rem;">
+                <span id="dt-source">Source</span> • <span id="dt-date">Date</span>
+            </div>
+            <div id="dt-body" class="detail-body">Body</div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>হোম</span>
+        </div>
+        <div class="nav-item" onclick="document.querySelector('.cat-nav').scrollIntoView({behavior:'smooth'})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>বিভাগ</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('search')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>অনুসন্ধান</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('about')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>সম্পর্কে</span>
+        </div>
+    </nav>
+
+    <div id="toast" class="toast">Message</div>
+
+    <script>
+        // CONFIG
+        const API_KEY = '636e239bbd088b292a1bdd1701900cc0';
+        const API_URL = 'https://gnews.io/api/v4/';
+        const STORAGE_KEY = 'fell_admin_news_v6';
+        
+        const CATEGORIES = [
+            { id: 'bd', label: 'বাংলাদেশ', type: 'country' },
+            { id: 'politics', label: 'রাজনীতি', type: 'topic' },
+            { id: 'sports', label: 'খেলাধুলা', type: 'topic' },
+            { id: 'business', label: 'অর্থনীতি', type: 'topic' },
+            { id: 'tech', label: 'প্রযুক্তি', type: 'topic' },
+            { id: 'world', label: 'বিশ্ব', type: 'topic' }
+        ];
+
+        let state = { currentCatIndex: 0, currentCat: CATEGORIES[0], articles: [] };
+
+        // INIT
+        function init() {
+            renderCategories();
+            loadCurrentCategory();
+        }
+
+        function renderCategories() {
+            const list = document.getElementById('cat-list');
+            list.innerHTML = CATEGORIES.map((c, i) => 
+                `<div class="cat-btn ${i===0?'active':''}" onclick="changeCat(${i})">${c.label}</div>`
+            ).join('');
+        }
+
+        async function changeCat(index) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.cat-btn')[index].classList.add('active');
+            state.currentCatIndex = index;
+            state.currentCat = CATEGORIES[index];
+            await loadCurrentCategory();
+        }
+
+        async function loadCurrentCategory() {
+            showToast("আপডেট হচ্ছে...");
+            const cat = state.currentCat;
+            let apiData = [];
+
+            // 1. Fetch API News
+            try {
+                let url = `${API_URL}top-headlines?token=${API_KEY}&lang=bn&max=20`;
+                if(cat.type === 'country') url += `&country=bd`;
+                else url += `&topic=${cat.id}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                apiData = data.articles || [];
+            } catch(e) { console.log(e); }
+
+            // 2. Fetch Admin News (LocalStorage)
+            const adminNews = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            // Filter Admin News by Current Category
+            const filteredAdmin = adminNews.filter(n => n.category === cat.id);
+
+            // 3. Merge: Admin news shows first, then API news
+            state.articles = [...filteredAdmin, ...apiData];
+            renderNews(state.articles);
+        }
+
+        function renderNews(list) {
+            const container = document.getElementById('news-container');
+            if(list.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">কোনো খবর পাওয়া যায়নি</div>';
+                return;
+            }
+            container.innerHTML = list.map(item => createCard(item)).join('');
+        }
+
+        function createCard(item) {
+            const img = item.image || `https://picsum.photos/seed/${item.title}/600/400.jpg`;
+            const date = new Date(item.publishedAt).toLocaleDateString('bn-BD');
+            const src = item.source?.name || 'ফেল নিউজ';
+            // Escape JSON string safely
+            const safeItem = encodeURIComponent(JSON.stringify(item));
+            
+            return `
+            <div class="card" onclick='openDetail("${safeItem}")'>
+                <div class="card-img-box"><img src="${img}" class="card-img" loading="lazy"></div>
+                <div class="card-body">
+                    <div class="card-meta"><span>${src}</span> <span>${date}</span></div>
+                    <h3 class="card-title">${item.title}</h3>
+                    <p class="card-desc">${item.description || '...'}</p>
+                </div>
+            </div>`;
+        }
+
+        // SEARCH LOGIC
+        let timeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(timeout);
+            const q = e.target.value;
+            if(q.length < 3) return;
+            timeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${API_URL}search?q=${q}&token=${API_KEY}&lang=bn&max=20`);
+                    const data = await res.json();
+                    renderNews(data.articles || []);
+                } catch(e) { document.getElementById('news-container').innerHTML = 'Error'; }
+            }, 1000);
+        });
+
+        // NAVIGATION
+        function switchTab(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-'+view).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        // DETAIL VIEW
+        function openDetail(itemStr) {
+            const item = JSON.parse(decodeURIComponent(itemStr));
+            document.getElementById('dt-img').src = item.image || `https://picsum.photos/seed/${item.title}/600/800.jpg`;
+            document.getElementById('dt-title').innerText = item.title;
+            document.getElementById('dt-body').innerText = item.description || item.content || 'বিস্তারিত নেই।';
+            document.getElementById('dt-source').innerText = item.source?.name || 'ফেল নিউজ';
+            document.getElementById('dt-date').innerText = new Date(item.publishedAt).toLocaleString('bn-BD');
+            
+            const catObj = CATEGORIES.find(c => c.id === item.category) || {label: 'সাধারণ'};
+            document.getElementById('dt-cat').innerText = catObj.label;
+
+            document.getElementById('detail-overlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-overlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
